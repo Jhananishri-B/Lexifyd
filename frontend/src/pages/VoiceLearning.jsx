@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Sparkles, Mic, Send, Book, Dumbbell, UserCircle, Brain } from 'lucide-react';
 import PageBackNav from '../components/PageBackNav';
+import LexiMascot from '../components/LexiMascot';
 
 const VoiceLearning = ({ onNavigateBack }) => {
   return (
@@ -94,6 +95,15 @@ const VoiceLearning = ({ onNavigateBack }) => {
             </button>
           </div>
         </div>
+        {/* AI Tutor Mascot */}
+        <LexiMascot
+          mood="happy"
+          message="Speak clearly and I'll help with pronunciation! 🎤"
+          position="bottom-left"
+          scale={0.55}
+          autoTips
+          tipInterval={14000}
+        />
       </main>
 
       <footer className="bottom-nav">

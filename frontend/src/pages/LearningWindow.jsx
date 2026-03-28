@@ -7,8 +7,13 @@ import {
   Share2,
   Mic,
   ChevronRight,
+  Flame,
+  Zap,
+  Target,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import PageBackNav from '../components/PageBackNav';
+import LexiMascot from '../components/LexiMascot';
 
 const BG_TAMIL_WORDS = [
   { text: 'தமிழ்', top: '6%', left: '2%', size: 'clamp(2.8rem, 7vw, 4.8rem)', rotate: '-10deg' },
@@ -97,7 +102,32 @@ const LearningWindow = ({ onNavigateBack, onNavigate }) => {
       </div>
 
       <div className="learning-window-foreground">
-        <PageBackNav title="Learning Window" onBack={onNavigateBack} />
+        <PageBackNav title="Learning Window" onBack={onNavigateBack}
+          trailing={
+            <div className="hub-stats">
+              <div className="stat-pill xp-pill">
+                <Zap size={16} color="#F59E0B" />
+                <span>120 XP</span>
+              </div>
+              <div className="stat-pill streak-pill">
+                <Flame size={16} color="#F97316" />
+                <span>3</span>
+              </div>
+            </div>
+          }
+        />
+
+        {/* Daily Goal Progress */}
+        <div className="daily-goal-bar">
+          <div className="goal-info">
+            <Target size={18} color="#8B4513" />
+            <span className="goal-label">Daily Goal</span>
+            <span className="goal-progress">120 / 200 XP</span>
+          </div>
+          <div className="goal-track">
+            <motion.div className="goal-fill" initial={{ width: 0 }} animate={{ width: '60%' }} transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }} />
+          </div>
+        </div>
 
         <main className="window-content">
         <h1 className="section-title">
@@ -106,9 +136,13 @@ const LearningWindow = ({ onNavigateBack, onNavigate }) => {
         </h1>
 
         <div className="window-grid">
-          {windows.map((win) => (
-            <div 
-              key={win.id} 
+          {windows.map((win, i) => (
+            <motion.div
+              key={win.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              whileHover={{ y: -10, boxShadow: '0 20px 40px rgba(139, 69, 19, 0.08)' }}
               className="window-card"
               onClick={() => {
                 const routeMap = {
@@ -135,11 +169,20 @@ const LearningWindow = ({ onNavigateBack, onNavigate }) => {
                 <ChevronRight size={20} className="arrow-icon" style={{ color: win.color }} />
               </div>
               <div className={`decorative-circle ${win.bgType}`}></div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </main>
       </div>
+
+      <LexiMascot
+        mood="happy"
+        message="Welcome back! Ready to learn Tamil today? 🌟"
+        position="bottom-right"
+        scale={0.65}
+        autoTips
+        tipInterval={20000}
+      />
 
       <style>{`
         .learning-window-page {
@@ -264,6 +307,18 @@ const LearningWindow = ({ onNavigateBack, onNavigate }) => {
         .accent-4 { background: #FFEDD5; opacity: 0.3; transform: scale(1.2) translate(10%, -10%); }
         .accent-5 { background: #FEE2E2; opacity: 0.3; transform: scale(1.2) translate(10%, -10%); }
         .accent-6 { background: #FFEDD5; opacity: 0.3; transform: scale(1.2) translate(10%, -10%); }
+
+        .hub-stats { display: flex; gap: 12px; }
+        .stat-pill { display: flex; align-items: center; gap: 6px; background: white; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .xp-pill span { color: #92400E; }
+        .streak-pill span { color: #F97316; }
+
+        .daily-goal-bar { background: white; padding: 16px 24px; border-radius: 20px; margin-bottom: 32px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+        .goal-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .goal-label { font-weight: 800; color: #4A2C00; font-size: 0.95rem; }
+        .goal-progress { margin-left: auto; font-weight: 700; color: #92400E; font-size: 0.85rem; }
+        .goal-track { height: 10px; background: #F3F4F6; border-radius: 10px; overflow: hidden; }
+        .goal-fill { height: 100%; background: linear-gradient(90deg, #F59E0B, #F97316); border-radius: 10px; }
 
         @media (max-width: 768px) {
           .learning-window-page {
