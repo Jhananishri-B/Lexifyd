@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { MessageCircle, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MessageCircle, ChevronRight, Loader2 } from 'lucide-react';
 import PageBackNav from '../components/PageBackNav';
+import { apiUrl } from '../config/api.js';
 
-const QUESTIONS = [
+/** Used only if the API is unavailable; includes correctLabel for local scoring. */
+const FALLBACK_QUESTIONS_FULL = [
   {
     id: 1,
     topic: 'Polysemy (பலபொருள்)',
@@ -15,6 +17,7 @@ const QUESTIONS = [
       { label: 'C', text: 'மழை மற்றும் மலை' },
       { label: 'D', text: 'புத்தகம் மற்றும் எழுத்து' },
     ],
+    correctLabel: 'B',
   },
   {
     id: 2,
@@ -29,6 +32,7 @@ const QUESTIONS = [
       { label: 'C', text: 'நிலா மற்றும் வாரம்' },
       { label: 'D', text: 'காற்று மற்றும் நீர்' },
     ],
+    correctLabel: 'B',
   },
   {
     id: 3,
@@ -43,12 +47,13 @@ const QUESTIONS = [
       { label: 'C', text: 'ஒலியியல் மாற்றம்' },
       { label: 'D', text: 'வினைச்சொல் மட்டும்' },
     ],
+    correctLabel: 'B',
   },
   {
     id: 4,
     topic: 'Polysemy (பலபொருள்)',
     tamil:
-      'சாகित्यத்தில் "திங்கள்" சில சூழல்களில் எந்த கால இடைவெளியையும் சுட்டும்?',
+      'சாகித்யத்தில் "திங்கள்" சில சூழல்களில் எந்த கால இடைவெளியையும் சுட்டும்?',
     english:
       'In some classical contexts, “திங்கள்” can also evoke which kind of time span?',
     options: [
@@ -57,6 +62,7 @@ const QUESTIONS = [
       { label: 'C', text: 'ஒரு நிமிடம்' },
       { label: 'D', text: 'ஒரு நூற்றாண்டு' },
     ],
+    correctLabel: 'B',
   },
   {
     id: 5,
@@ -71,31 +77,151 @@ const QUESTIONS = [
       { label: 'C', text: 'சங்கு (கைப்பு) மற்றும் இலக்கிய அமைப்பு' },
       { label: 'D', text: 'எண் மற்றும் நிறம்' },
     ],
+    correctLabel: 'C',
   },
 ];
 
+function stripCorrectLabels(list) {
+  return list.map((q) => {
+    const copy = { ...q };
+    delete copy.correctLabel;
+    return copy;
+  });
+}
+
 const PracticeWindow = ({ onNavigateBack }) => {
   const steps = [1, 2, 3, 4, 5];
+  const [loadStatus, setLoadStatus] = useState('loading');
+  const [loadError, setLoadError] = useState('');
+  const [usingFallback, setUsingFallback] = useState(false);
+  const [quizId, setQuizId] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedLabel, setSelectedLabel] = useState(null);
+  const [responses, setResponses] = useState({});
   const [finished, setFinished] = useState(false);
+  const [submittingScore, setSubmittingScore] = useState(false);
+  const [scoreResult, setScoreResult] = useState(null);
+  const [quizModel, setQuizModel] = useState(null);
 
-  const currentQuestion = QUESTIONS[currentStep - 1];
+  const loadQuiz = useCallback(async () => {
+    setLoadStatus('loading');
+    setLoadError('');
+    setQuizId(null);
+    setQuizModel(null);
+    setUsingFallback(false);
+    setQuestions([]);
+    setCurrentStep(1);
+    setSelectedLabel(null);
+    setResponses({});
+    setFinished(false);
+    setSubmittingScore(false);
+    setScoreResult(null);
+
+    try {
+      const url = `${apiUrl('/api/practice-quiz')}?t=${Date.now()}`;
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = [data.error, data.hint].filter(Boolean).join(' — ');
+        throw new Error(msg || `Could not load quiz (${res.status})`);
+      }
+      if (!data.questions || data.questions.length !== 5 || !data.quizId) {
+        throw new Error('Invalid quiz from server');
+      }
+      setQuizId(data.quizId);
+      setQuestions(data.questions);
+      setQuizModel(data.model || null);
+      setUsingFallback(false);
+      setLoadStatus('ready');
+    } catch (e) {
+      const msg = e.message || 'Failed to load quiz';
+      console.warn('[PracticeWindow] AI quiz unavailable, using built-in set:', msg);
+      setLoadError(msg);
+      setQuizModel(null);
+      setUsingFallback(true);
+      setQuestions(stripCorrectLabels(FALLBACK_QUESTIONS_FULL));
+      setLoadStatus('ready');
+    }
+  }, []);
+
+  useEffect(() => {
+    loadQuiz();
+  }, [loadQuiz]);
+
+  const currentQuestion = questions[currentStep - 1];
   const progressFill = `${(currentStep / 5) * 100}%`;
 
+  const computeLocalScore = (orderedAnswers) => {
+    const details = FALLBACK_QUESTIONS_FULL.map((q, i) => {
+      const selected = orderedAnswers[i] || null;
+      const isCorrect =
+        selected && String(selected).toUpperCase() === q.correctLabel;
+      return {
+        id: q.id,
+        selected,
+        correctLabel: q.correctLabel,
+        isCorrect,
+        tamil: q.tamil,
+        english: q.english,
+      };
+    });
+    const score = details.filter((d) => d.isCorrect).length;
+    return { score, outOf: 5, details };
+  };
+
+  const finishQuiz = async (finalResponses) => {
+    const ordered = questions.map((q) => finalResponses[q.id] || '');
+    setSubmittingScore(true);
+    try {
+      if (quizId) {
+        const res = await fetch(apiUrl('/api/practice-quiz/score'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quizId, answers: ordered }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Could not submit score');
+        }
+        setScoreResult({
+          score: data.score,
+          outOf: data.outOf,
+          details: data.details,
+        });
+      } else {
+        setScoreResult(computeLocalScore(ordered));
+      }
+      setFinished(true);
+    } catch {
+      setScoreResult(computeLocalScore(ordered));
+      setFinished(true);
+    } finally {
+      setSubmittingScore(false);
+    }
+  };
+
   const handleNext = () => {
+    if (!currentQuestion || !selectedLabel) return;
+    const nextResponses = {
+      ...responses,
+      [currentQuestion.id]: selectedLabel,
+    };
+    setResponses(nextResponses);
+
     if (currentStep < 5) {
       setCurrentStep((s) => s + 1);
       setSelectedLabel(null);
     } else {
-      setFinished(true);
+      finishQuiz(nextResponses);
     }
   };
 
   const handlePracticeAgain = () => {
-    setCurrentStep(1);
-    setSelectedLabel(null);
-    setFinished(false);
+    loadQuiz();
   };
 
   return (
@@ -123,27 +249,76 @@ const PracticeWindow = ({ onNavigateBack }) => {
       <main className="practice-content">
         <PageBackNav title="Practice Window" onBack={onNavigateBack} />
 
+        {loadStatus === 'ready' && !usingFallback && quizModel && (
+          <p className="quiz-source-badge" role="status">
+            AI-generated set · {quizModel}
+          </p>
+        )}
+
         <div className="questions-container">
-          {finished ? (
+          {loadStatus === 'loading' && (
+            <div className="load-state">
+              <Loader2 className="load-spinner" size={40} aria-hidden />
+              <p>Generating five polysemy questions…</p>
+            </div>
+          )}
+
+          {loadStatus === 'ready' && loadError && usingFallback && (
+            <div className="fallback-banner" role="status">
+              <strong>Offline mode.</strong> {loadError} Showing built-in
+              questions. Start the backend with{' '}
+              <code>OPENROUTER_API_KEY</code> in <code>backend/.env</code> for
+              AI-generated sets.
+            </div>
+          )}
+
+          {loadStatus === 'ready' && finished && scoreResult && (
             <div className="completion-card">
-              <h2 className="completion-title">Practice round complete</h2>
-              <p className="completion-text">
-                You have worked through five polysemy prompts. Run the set again
-                any time to reinforce how one Tamil form can carry several
-                related meanings.
+              <h2 className="completion-title">Your score</h2>
+              <p className="score-big">
+                {scoreResult.score} / {scoreResult.outOf}
               </p>
+              <p className="completion-text">
+                {scoreResult.score === 5
+                  ? 'Perfect — strong grasp of Tamil polysemy.'
+                  : scoreResult.score >= 3
+                    ? 'Good work — review the items below to tighten meaning distinctions.'
+                    : 'Keep practicing — polysemy takes time to recognize in context.'}
+              </p>
+              <ul className="review-list">
+                {scoreResult.details.map((d) => (
+                  <li
+                    key={d.id}
+                    className={`review-item ${d.isCorrect ? 'review-item--ok' : 'review-item--miss'}`}
+                  >
+                    <span className="review-q">Q{d.id}</span>
+                    <span className="review-outcome">
+                      {d.isCorrect ? 'Correct' : 'Incorrect'}
+                    </span>
+                    <span className="review-meta">
+                      Your answer: {d.selected || '—'} · Correct:{' '}
+                      {d.correctLabel}
+                    </span>
+                  </li>
+                ))}
+              </ul>
               <button
                 type="button"
                 className="btn-primary again-btn"
                 onClick={handlePracticeAgain}
               >
-                Practice again
+                New practice round
               </button>
             </div>
-          ) : (
+          )}
+
+          {loadStatus === 'ready' &&
+            !finished &&
+            currentQuestion &&
+            !submittingScore && (
             <div className="question-block">
               <p className="step-meta">
-                Question {currentStep} of {QUESTIONS.length}
+                Question {currentStep} of {questions.length}
               </p>
               <div className="question-card">
                 <div className="card-header">
@@ -177,10 +352,17 @@ const PracticeWindow = ({ onNavigateBack }) => {
                   onClick={handleNext}
                   disabled={!selectedLabel}
                 >
-                  {currentStep === 5 ? 'Finish' : 'Next question'}
+                  {currentStep === 5 ? 'Finish & see score' : 'Next question'}
                   <ChevronRight size={20} />
                 </button>
               </div>
+            </div>
+          )}
+
+          {submittingScore && (
+            <div className="load-state">
+              <Loader2 className="load-spinner" size={40} aria-hidden />
+              <p>Checking your answers…</p>
             </div>
           )}
         </div>
@@ -190,7 +372,7 @@ const PracticeWindow = ({ onNavigateBack }) => {
         </button>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .practice-window-page { display: flex; min-height: 100vh; }
         .progress-sidebar { width: 100px; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; padding: 60px 0; position: fixed; height: 100vh; border-right: 1px solid rgba(0,0,0,0.03); }
         .sidebar-label { font-size: 0.65rem; font-weight: 800; color: #22C55E; letter-spacing: 1.5px; margin-bottom: 40px; }
@@ -201,7 +383,14 @@ const PracticeWindow = ({ onNavigateBack }) => {
         .vertical-bar-container { width: 4px; height: 80px; background: #E5E7EB; border-radius: 2px; position: relative; overflow: hidden; }
         .bar-fill { position: absolute; bottom: 0; left: 0; width: 100%; background: #22C55E; transition: height 0.35s ease; }
         .practice-content { flex: 1; margin-left: 100px; padding: 40px 8% 48px; position: relative; }
-        .questions-container { display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; width: 100%; }
+        .quiz-source-badge { font-size: 0.78rem; font-weight: 700; color: #166534; margin: 0 auto 12px; max-width: 720px; width: 100%; }
+        .questions-container { display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; width: 100%; gap: 16px; }
+        .load-state { text-align: center; padding: 48px 24px; color: #5C3317; }
+        .load-state p { margin-top: 16px; font-weight: 600; opacity: 0.8; }
+        .load-spinner { animation: spin 0.9s linear infinite; color: #8B4513; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fallback-banner { background: #FFFBEB; border: 1px solid #FDE68A; color: #78350F; padding: 14px 18px; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; }
+        .fallback-banner code { font-size: 0.82rem; background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 6px; }
         .step-meta { font-size: 0.8rem; font-weight: 700; color: #5C3317; opacity: 0.65; margin-bottom: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
         .question-block { display: flex; flex-direction: column; gap: 28px; align-items: stretch; }
         .question-card { background: #FFEEDD; padding: 32px 36px; border-radius: 32px; position: relative; text-align: left; }
@@ -223,8 +412,16 @@ const PracticeWindow = ({ onNavigateBack }) => {
         .btn-next:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(92, 51, 23, 0.25); }
         .btn-next:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
         .completion-card { background: #FFF9F5; border-radius: 32px; padding: 40px; text-align: center; border: 1px solid rgba(139, 69, 19, 0.08); }
-        .completion-title { font-size: 1.5rem; font-weight: 800; color: var(--primary-brown); margin-bottom: 12px; }
-        .completion-text { font-size: 1rem; color: #5C3317; opacity: 0.8; line-height: 1.6; margin-bottom: 28px; max-width: 48ch; margin-left: auto; margin-right: auto; }
+        .completion-title { font-size: 1.5rem; font-weight: 800; color: var(--primary-brown); margin-bottom: 8px; }
+        .score-big { font-size: 2.75rem; font-weight: 800; color: #166534; margin: 12px 0 16px; font-family: var(--font-main); }
+        .completion-text { font-size: 1rem; color: #5C3317; opacity: 0.85; line-height: 1.6; margin-bottom: 24px; max-width: 48ch; margin-left: auto; margin-right: auto; }
+        .review-list { list-style: none; text-align: left; margin: 0 0 28px; padding: 0; display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin-left: auto; margin-right: auto; }
+        .review-item { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 12px 14px; border-radius: 14px; font-size: 0.9rem; }
+        .review-item--ok { background: #DCFCE7; color: #166534; }
+        .review-item--miss { background: #FEE2E2; color: #991B1B; }
+        .review-q { font-weight: 800; }
+        .review-outcome { font-weight: 700; }
+        .review-meta { grid-column: 1 / -1; font-size: 0.82rem; opacity: 0.9; }
         .again-btn { margin: 0 auto; justify-content: center; }
         .fab-chat { position: fixed; bottom: 40px; right: 40px; width: 64px; height: 64px; background: #5C3317; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 30px rgba(92, 51, 23, 0.3); transition: var(--transition); }
         .fab-chat:hover { transform: scale(1.1); }

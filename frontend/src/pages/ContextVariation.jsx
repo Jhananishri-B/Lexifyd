@@ -106,7 +106,7 @@ const ContextVariation = ({ onNavigateBack }) => {
         </section>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .variation-page {
           min-height: 100vh;
           padding: 40px 80px;

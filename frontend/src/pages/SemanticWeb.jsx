@@ -116,7 +116,7 @@ const SemanticWeb = ({ onNavigateBack }) => {
         </div>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .semantic-web-page { min-height: 100vh; padding: 24px 60px; position: relative; overflow-x: hidden; }
         .web-header-trailing { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: flex-end; }
         .header-nav { display: flex; gap: 24px; font-weight: 600; color: #5C3317; opacity: 0.6; }

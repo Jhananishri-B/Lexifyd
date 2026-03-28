@@ -117,7 +117,7 @@ const VoiceLearning = ({ onNavigateBack }) => {
         </div>
       </footer>
 
-      <style jsx>{`
+      <style>{`
         .voice-learning-page { min-height: 100vh; display: flex; flex-direction: column; background: #FFFBF7; position: relative; overflow: hidden; }
         
         .voice-header-wrap { padding: 24px 40px 0; z-index: 10; position: relative; }

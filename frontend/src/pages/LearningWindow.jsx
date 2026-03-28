@@ -141,7 +141,7 @@ const LearningWindow = ({ onNavigateBack, onNavigate }) => {
       </main>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .learning-window-page {
           min-height: 100vh;
           padding: 40px 80px;

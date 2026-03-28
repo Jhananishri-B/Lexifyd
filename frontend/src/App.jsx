@@ -165,7 +165,7 @@ const App = () => {
         </section>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .landing-page {
           min-height: 100vh;
           padding: 60px 80px;

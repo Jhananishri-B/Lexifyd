@@ -175,7 +175,7 @@ const SemanticBuilder = ({ onNavigateBack }) => {
         </aside>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .semantic-builder-page {
           min-height: 100vh;
           display: flex;

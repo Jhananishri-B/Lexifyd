@@ -105,7 +105,7 @@ const ExplainableAI = ({ onNavigateBack }) => {
         </div>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .ai-window-page {
           min-height: 100vh;
           display: flex;
