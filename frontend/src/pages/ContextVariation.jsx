@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Sun, Flower2, User } from 'lucide-react';
 import PageBackNav from '../components/PageBackNav';
+import LexiMascot from '../components/LexiMascot';
 
 const ContextVariation = ({ onNavigateBack }) => {
   return (
@@ -104,6 +105,15 @@ const ContextVariation = ({ onNavigateBack }) => {
             <img src="/garland.png" alt="Flower Garland" />
           </div>
         </section>
+
+        {/* AI Tutor Mascot */}
+        <LexiMascot
+          mood="idle"
+          position="bottom-right"
+          scale={0.6}
+          autoTips
+          tipInterval={16000}
+        />
       </main>
 
       <style jsx>{`

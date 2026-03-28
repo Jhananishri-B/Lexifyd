@@ -10,6 +10,7 @@ import {
   BrainCircuit
 } from 'lucide-react';
 import PageBackNav from '../components/PageBackNav';
+import LexiMascot from '../components/LexiMascot';
 
 const ExplainableAI = ({ onNavigateBack }) => {
   return (
@@ -103,6 +104,16 @@ const ExplainableAI = ({ onNavigateBack }) => {
             <Mic size={20} />
           </button>
         </div>
+
+        {/* AI Tutor Mascot */}
+        <LexiMascot
+          mood="happy"
+          message="I'm your LexiSense AI tutor! Ask me anything about Tamil words 🧠"
+          position="bottom-right"
+          scale={0.6}
+          autoTips
+          tipInterval={20000}
+        />
       </main>
 
       <style jsx>{`

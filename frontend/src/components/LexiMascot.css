@@ -1,0 +1,693 @@
+/* LexiMascot – AI Tutor Character (converted from SCSS to vanilla CSS) */
+/* Color palette adapted to match LexiSense brown/warm theme */
+
+.lexi-mascot-wrapper {
+  --mascot-black: #8B4513;
+  --mascot-white: #fff;
+  --mascot-primary: #D97706;
+  --mascot-primary-dark: #B45309;
+  --mascot-primary-tint: #F59E0B;
+  --mascot-accent: #FEF3C7;
+  --mascot-nose: #F5879B;
+  --mascot-blush: #F5879B;
+  --mascot-mouth-inner: #F5879B;
+  --mascot-shadow: hsl(30, 30%, 93%);
+  position: relative;
+  display: inline-block;
+}
+
+/* ═══════════════════════ SCOR CONTAINER ═══════════════════════ */
+.scor {
+  --ear-size: 4.5rem;
+  position: relative;
+  padding-top: calc(var(--ear-size) + 1rem);
+  padding-bottom: 1.5rem;
+  cursor: pointer;
+  transform: scale(var(--mascot-scale, 0.7));
+  transform-origin: bottom center;
+}
+
+.scor::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  bottom: 0.875rem;
+  left: 50%;
+  height: 1rem;
+  width: 50%;
+  transform: translateX(-50%);
+  border-radius: 100%;
+  background-color: var(--mascot-primary);
+  opacity: 0.15;
+}
+
+/* ═══════════════════════ EYES ═══════════════════════ */
+.scor-eye {
+  --eye-position-x: 1rem;
+  position: absolute;
+  z-index: 2;
+  top: 2.375rem;
+  height: 0.9375rem;
+  width: 0.875rem;
+  background-color: var(--mascot-black);
+  border-radius: 50% 55% / 50% 45%;
+  transform-origin: center 70%;
+  overflow: hidden;
+  animation: mascotBlink 7s infinite;
+}
+
+.scor-eye::before,
+.scor-eye::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 100%;
+}
+
+.scor-eye::before {
+  top: 0.0625rem;
+  height: 40%;
+  width: 40%;
+  background-color: var(--mascot-white);
+}
+
+.scor-eye::after {
+  bottom: -0.0625rem;
+  height: 40%;
+  width: 70%;
+  background-color: var(--mascot-primary);
+}
+
+.scor-eye-left { left: var(--eye-position-x); }
+.scor-eye-right { right: var(--eye-position-x); }
+
+/* ═══════════════════════ NOSE ═══════════════════════ */
+.scor-nose {
+  position: relative;
+  z-index: 5;
+  top: 0;
+  height: 0.5rem;
+  width: 0.5rem;
+}
+
+.scor-nose::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  transform: rotate(45deg);
+  border-top-left-radius: 80%;
+  border-top-right-radius: 0.1rem;
+  border-bottom-left-radius: 0.1rem;
+  border-bottom-right-radius: 0.125rem;
+  background-color: var(--mascot-nose);
+}
+
+.scor-nose::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 0.25rem);
+  transform: translateX(-50%);
+  height: 1.125rem;
+  width: 1.75rem;
+  border-radius: 0.25rem;
+  background-color: var(--mascot-accent);
+}
+
+/* ═══════════════════════ MOUTH ═══════════════════════ */
+.scor-mouth {
+  position: absolute;
+  bottom: -0.5625rem;
+  left: 50%;
+  height: 0.175rem;
+  width: 1.25rem;
+  transform: translateX(-50%) translateY(var(--mouth-translate, 0));
+  transition: var(--mouth-transition, 0.2s) ease-in-out;
+}
+
+.scor-mouth-line {
+  position: absolute;
+  z-index: 4;
+  left: calc(50% - 0.03rem);
+  top: 100%;
+  height: 0.5rem;
+  width: 0.0625rem;
+  background-color: var(--mascot-black);
+}
+
+.scor-mouth-outer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.scor-mouth-outer::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  height: 200%;
+  width: calc(100% - 0.125rem);
+  border-radius: 100%;
+  border: 0.0625rem solid var(--mascot-black);
+  background-color: var(--mascot-white);
+}
+
+.scor-mouth-inner {
+  position: absolute;
+  z-index: 1;
+  left: 2%;
+  height: 0.625rem;
+  width: 96%;
+  transform-origin: center top;
+  transform: scaleY(var(--mouth-scale, 0));
+  border-top-left-radius: 1px 10%;
+  border-top-right-radius: 1px 10%;
+  border-bottom-left-radius: 50% 90%;
+  border-bottom-right-radius: 50% 90%;
+  background-color: var(--mascot-black);
+  overflow: hidden;
+  transition: var(--mouth-transition, 0.2s) ease-in-out;
+}
+
+.scor-mouth-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 0.34rem;
+  width: 35%;
+  transform: translateX(-50%);
+  border-bottom-left-radius: 100%;
+  border-bottom-right-radius: 100%;
+  background-color: var(--mascot-white);
+}
+
+.scor-mouth-inner::after {
+  content: '';
+  position: absolute;
+  bottom: -0.0625rem;
+  right: 0.0625rem;
+  height: 0.3rem;
+  width: 0.75rem;
+  transform: rotate(-10deg);
+  border-radius: 100%;
+  background-color: var(--mascot-mouth-inner);
+}
+
+/* ═══════════════════════ BLUSH ═══════════════════════ */
+.scor-blush {
+  --blush-position-x: 0.5rem;
+  position: absolute;
+  z-index: 1;
+  top: 3.125rem;
+  height: 0.5rem;
+  width: 0.875rem;
+  border-radius: 100%;
+  background-color: var(--mascot-blush);
+  opacity: 0.3;
+}
+
+.scor-blush-left {
+  left: var(--blush-position-x);
+  transform: rotate(5deg);
+}
+
+.scor-blush-right {
+  right: var(--blush-position-x);
+  transform: rotate(-5deg);
+}
+
+/* ═══════════════════════ FACE ═══════════════════════ */
+.scor-face {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  background-color: var(--mascot-white);
+  border-radius: 50% 60% / 50% 40%;
+}
+
+.scor-face-lower {
+  position: absolute;
+  z-index: 2;
+  top: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ═══════════════════════ FACE FLUFF ═══════════════════════ */
+.scor-face-fluff {
+  --fluff-position-x: 1.25rem;
+  position: absolute;
+  top: 3.5rem;
+  height: 2.125rem;
+  width: 2.125rem;
+}
+
+.scor-face-fluff::before,
+.scor-face-fluff::after {
+  content: '';
+  transform-origin: right top;
+  border-top-left-radius: 90%;
+  border-bottom-right-radius: 90%;
+  border-bottom-left-radius: 0.0625rem;
+  border-top-right-radius: 0.0625rem;
+  background-color: var(--mascot-white);
+}
+
+.scor-face-fluff::before {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  transform: rotate(60deg);
+}
+
+.scor-face-fluff::after {
+  position: absolute;
+  left: 0.25rem;
+  top: -0.75rem;
+  height: 1.75rem;
+  width: 1.75rem;
+  transform: rotate(80deg);
+}
+
+.scor-face-fluff-left {
+  right: calc(100% - var(--fluff-position-x));
+}
+
+.scor-face-fluff-right {
+  transform: rotateY(180deg);
+  left: calc(100% - var(--fluff-position-x));
+}
+
+/* ═══════════════════════ EARS ═══════════════════════ */
+.scor-ear {
+  background-color: var(--mascot-white);
+  overflow: hidden;
+}
+
+.scor-ear,
+.scor-ear-right-wrap {
+  position: absolute;
+  z-index: 1;
+  top: 1.75rem;
+  height: var(--ear-size);
+  width: var(--ear-size);
+}
+
+.scor-ear-left {
+  --ear-gradient-rotate: 40deg;
+  --ear-rotate: 120deg;
+  --keyframe-rotate-to: 115deg;
+  left: -2rem;
+  border-top-left-radius: 90%;
+  border-bottom-right-radius: 90%;
+  border-bottom-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  background: linear-gradient(40deg, var(--mascot-primary) 30%, var(--mascot-primary-tint) 30%, var(--mascot-primary-tint) 40%, var(--mascot-white) 40%);
+  transform-origin: right top;
+  transform: rotate(120deg);
+  animation: mascotEarWiggle 2s ease-in-out infinite alternate;
+}
+
+.scor-ear-left::before {
+  content: '';
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  height: 2rem;
+  width: 2rem;
+  transform: translateX(-50%);
+  border-radius: inherit;
+  background-color: var(--mascot-accent);
+}
+
+.scor-ear-left::after {
+  content: '';
+  position: absolute;
+  top: 0.8rem;
+  left: 3rem;
+  height: 1rem;
+  width: 2rem;
+  transform: rotate(40deg);
+  border-radius: 100%;
+  background-color: var(--mascot-shadow);
+  mix-blend-mode: multiply;
+}
+
+.scor-ear-right-wrap {
+  --ear-gradient-rotate: -40deg;
+  right: -2rem;
+  transform-origin: left top;
+  transform: rotate(-120deg);
+  animation: mascotEarWiggleR 2s ease-in-out infinite alternate;
+}
+
+.scor-ear-right-wrap > .scor-ear {
+  top: 0; left: 0;
+  height: 100%; width: 100%;
+  transform: none;
+  border-top-right-radius: 90%;
+  border-bottom-left-radius: 90%;
+  border-bottom-right-radius: 0.25rem;
+  border-top-left-radius: 0.25rem;
+  background: linear-gradient(-40deg, var(--mascot-primary) 30%, var(--mascot-primary-tint) 30%, var(--mascot-primary-tint) 40%, var(--mascot-white) 40%);
+}
+
+.scor-ear-right-wrap > .scor-ear::before {
+  content: '';
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  height: 2rem;
+  width: 2rem;
+  transform: translateX(-50%);
+  border-radius: inherit;
+  background-color: var(--mascot-accent);
+}
+
+.scor-ear-right-wrap > .scor-ear::after {
+  content: '';
+  position: absolute;
+  top: 0.8rem;
+  right: 3rem;
+  height: 1rem;
+  width: 2rem;
+  transform: rotate(-40deg);
+  border-radius: 100%;
+  background-color: var(--mascot-shadow);
+  mix-blend-mode: multiply;
+}
+
+.scor-ear-right-fluff {
+  position: absolute;
+  top: 1.25rem;
+  left: 0.5rem;
+  height: 1.75rem;
+  width: 1rem;
+  transform-origin: inherit;
+  transform: rotate(25deg);
+  border-top-right-radius: 90%;
+  border-bottom-left-radius: 90%;
+  border-bottom-right-radius: 0.125rem;
+  border-top-left-radius: 0.25rem;
+  background-color: var(--mascot-white);
+}
+
+/* ═══════════════════════ HEAD ═══════════════════════ */
+.scor-head {
+  position: relative;
+  z-index: 5;
+  height: 5.25rem;
+  width: 6rem;
+  transform-origin: center 4rem;
+  transform: var(--head-transform, none);
+  transition: 0.7s cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+/* ═══════════════════════ BODY ═══════════════════════ */
+.scor-body {
+  position: relative;
+  left: 50%;
+  height: 3.25rem;
+  width: 3rem;
+  margin-top: -0.75rem;
+  transform: translateX(-50%);
+}
+
+.scor-body::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 0.25rem;
+  left: 50%;
+  height: 1.125rem;
+  width: 60%;
+  transform: var(--body-transform, translateX(-50%));
+  border-radius: 100%;
+  background-color: var(--mascot-shadow);
+  transition: transform 0.7s cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+.scor-neck {
+  position: absolute;
+  z-index: 5;
+  top: 0.625rem;
+  height: 0.5rem;
+  width: 100%;
+}
+
+.scor-neck::before,
+.scor-neck::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 1.125rem;
+  border-top-left-radius: 30% 50%;
+  border-bottom-left-radius: 30% 50%;
+  border-top-right-radius: 60% 50%;
+  border-bottom-right-radius: 60% 50%;
+  background-color: var(--mascot-primary);
+}
+
+.scor-neck::before { left: 0.125rem; transform: rotate(20deg); }
+.scor-neck::after { right: 0.125rem; transform: rotateY(180deg) rotate(20deg); }
+
+.scor-torso {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 50% 70% / 50% 30%;
+  background: var(--mascot-shadow);
+  overflow: hidden;
+}
+
+.scor-torso::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 50%;
+  width: 100%;
+  background-color: var(--mascot-white);
+}
+
+.scor-torso::after {
+  content: '';
+  position: absolute;
+  top: -0.375rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 45%;
+  height: 90%;
+  border-radius: 100%;
+  background-color: var(--mascot-white);
+}
+
+.scor-tail {
+  position: absolute;
+  left: -0.375rem;
+  bottom: 0.375rem;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 100%;
+  background-color: var(--mascot-shadow);
+}
+
+/* ═══════════════════════ ARMS ═══════════════════════ */
+.scor-arm {
+  position: absolute;
+  z-index: 3;
+  top: 1.125rem;
+  height: 2.25rem;
+  width: 1.25rem;
+  border-radius: 50% 70% / 50% 25%;
+  transform-origin: 0.625rem center;
+  background-color: var(--mascot-white);
+  overflow: hidden;
+}
+
+.scor-arm::before,
+.scor-arm::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  height: 0.375rem;
+  width: 1px;
+  border-radius: 1px;
+  background-color: var(--mascot-black);
+}
+
+.scor-arm::before { left: 0.375rem; }
+.scor-arm::after { right: 0.375rem; }
+
+.scor-arm-left { left: -0.0625rem; transform: rotate(-10deg); }
+.scor-arm-right { right: -0.0625rem; transform: rotate(10deg); }
+
+/* ═══════════════════════ LEGS ═══════════════════════ */
+.scor-leg {
+  position: absolute;
+  z-index: 2;
+  bottom: -0.5rem;
+  height: 1rem;
+  width: 0.625rem;
+  transform-origin: top center;
+  background-color: var(--mascot-shadow);
+}
+
+.scor-leg-left {
+  right: calc(100% - 1.0625rem);
+  transform: rotate(80deg);
+}
+
+.scor-leg-right {
+  left: calc(100% - 1.0625rem);
+  transform: rotate(-80deg);
+}
+
+.scor-leg-foot {
+  position: absolute;
+  bottom: 0;
+  height: 3.25rem;
+  width: 1.5rem;
+  border-radius: 50% 30% / 50% 60%;
+  transform-origin: center bottom;
+  overflow: hidden;
+  background-color: var(--mascot-white);
+}
+
+.scor-leg-left .scor-leg-foot {
+  left: 0.5rem;
+  transform: rotate(-110deg);
+  border-top-right-radius: 50% 20%;
+  background: linear-gradient(175deg, var(--mascot-primary) 30%, var(--mascot-white) 30%);
+  animation: mascotFootWiggleL 1s ease-in-out infinite alternate;
+}
+
+.scor-leg-right .scor-leg-foot {
+  right: 0.5rem;
+  transform: rotate(110deg);
+  border-top-left-radius: 50% 20%;
+  background: linear-gradient(-175deg, var(--mascot-primary) 30%, var(--mascot-white) 30%);
+  animation: mascotFootWiggleR 1s ease-in-out infinite alternate;
+}
+
+.scor-leg-foot::before,
+.scor-leg-foot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 0.5rem;
+  width: 1px;
+  border-radius: 1px;
+  background-color: var(--mascot-black);
+  transform-origin: center top;
+}
+
+.scor-leg-left .scor-leg-foot::before { left: 0.5rem; transform: rotate(-5deg) translateX(-0.125rem); }
+.scor-leg-left .scor-leg-foot::after  { right: 0.5rem; transform: rotate(-5deg) translateX(-0.125rem); }
+.scor-leg-right .scor-leg-foot::before { left: 0.5rem; transform: rotate(5deg) translateX(0.125rem); }
+.scor-leg-right .scor-leg-foot::after  { right: 0.5rem; transform: rotate(5deg) translateX(0.125rem); }
+
+.scor-leg-foot-pad {
+  position: absolute;
+  top: 1.5rem;
+  height: 0.875rem;
+  width: 1.25rem;
+  border-radius: 0.25rem;
+  background-color: var(--mascot-accent);
+  transform: perspective(0.5rem) rotateX(-7deg);
+}
+
+.scor-leg-left .scor-leg-foot-pad {
+  left: -0.125rem;
+  transform: rotate(-5deg) perspective(0.5rem) rotateX(-7deg);
+}
+
+.scor-leg-right .scor-leg-foot-pad {
+  right: -0.125rem;
+  transform: rotate(5deg) perspective(0.5rem) rotateX(-7deg);
+}
+
+/* ═══════════════════════ HOVER (eyes close, head tilt, mouth open) ═══════════════════════ */
+.scor:hover {
+  --mouth-translate: -0.0625rem;
+  --mouth-scale: 1;
+  --mouth-transition: 0.2s 0.3s;
+  --body-transform: translateX(-40%) scaleX(1.1);
+  --head-transform: rotate(15deg);
+}
+
+/* ═══════════════════════ SPEECH BUBBLE ═══════════════════════ */
+.mascot-speech-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 10px 16px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4A2C00;
+  max-width: 200px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.4;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.mascot-speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: white;
+}
+
+/* ═══════════════════════ KEYFRAMES ═══════════════════════ */
+@keyframes mascotBlink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.05); }
+}
+
+@keyframes mascotEarWiggle {
+  100% { transform: rotate(115deg); }
+}
+
+@keyframes mascotEarWiggleR {
+  100% { transform: rotate(-115deg); }
+}
+
+@keyframes mascotFootWiggleL {
+  100% { transform: rotate(-120deg); }
+}
+
+@keyframes mascotFootWiggleR {
+  100% { transform: rotate(120deg); }
+}
+
+@keyframes mascotBounce {
+  0%, 100% { transform: translateY(0) scale(var(--mascot-scale, 0.7)); }
+  50% { transform: translateY(-8px) scale(var(--mascot-scale, 0.7)); }
+}
+
+/* Emotional states */
+.scor.happy {
+  animation: mascotBounce 0.6s ease-in-out 2;
+  --mouth-translate: -0.0625rem;
+  --mouth-scale: 1;
+}
+
+.scor.thinking {
+  --head-transform: rotate(-8deg);
+}
+
+.scor.sad {
+  --head-transform: rotate(-5deg);
+}
