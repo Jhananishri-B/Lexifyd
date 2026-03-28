@@ -176,6 +176,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: 'GET /api/health',
       practiceQuiz: 'GET /api/practice-quiz',
+      checkPracticeQuizAnswer: 'POST /api/practice-quiz/check',
       scorePracticeQuiz: 'POST /api/practice-quiz/score',
       chat: 'POST /api/chat',
     },
@@ -351,6 +352,47 @@ app.get('/api/practice-quiz', async (req, res) => {
       model: OPENROUTER_MODEL,
     });
   }
+});
+
+/**
+ * POST /api/practice-quiz/check
+ * Body: { quizId, questionId (1–5), answer ("A"–"D") }
+ * Returns whether the choice matches the stored key; does not end the session (use /score after all five).
+ */
+app.post('/api/practice-quiz/check', (req, res) => {
+  cleanupPracticeQuizSessions();
+  const { quizId, questionId, answer } = req.body || {};
+  if (!quizId || typeof quizId !== 'string') {
+    return res.status(400).json({ error: 'Body must include quizId (string).' });
+  }
+  const qid = Number(questionId);
+  if (!Number.isInteger(qid) || qid < 1 || qid > 5) {
+    return res.status(400).json({ error: 'Body must include questionId (integer 1–5).' });
+  }
+
+  const session = practiceQuizSessions.get(quizId);
+  if (!session) {
+    return res.status(410).json({
+      error: 'Quiz session expired or invalid. Start a new practice round.',
+    });
+  }
+
+  const q = session.questions[qid - 1];
+  if (!q) {
+    return res.status(400).json({ error: 'Invalid questionId for this quiz.' });
+  }
+
+  const sel = String(answer ?? '')
+    .trim()
+    .toUpperCase();
+  const valid = ['A', 'B', 'C', 'D'].includes(sel);
+  const isCorrect = valid && sel === q.correctLabel;
+
+  return res.json({
+    correct: isCorrect,
+    correctLabel: q.correctLabel,
+    selected: valid ? sel : null,
+  });
 });
 
 /**

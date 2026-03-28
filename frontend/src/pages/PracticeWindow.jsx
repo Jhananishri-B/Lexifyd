@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronRight, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronRight, Loader2, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import PageBackNav from '../components/PageBackNav';
 import LexiMascot from '../components/LexiMascot';
@@ -103,6 +102,18 @@ const PracticeWindow = ({ onNavigateBack }) => {
   const [quizModel, setQuizModel] = useState(null);
   const [mascotMood, setMascotMood] = useState('thinking');
   const [mascotMsg, setMascotMsg] = useState('Loading your practice set…');
+  /** null = idle; after submit, popup + auto-advance */
+  const [stepFeedback, setStepFeedback] = useState(null);
+  const checkTimerRef = useRef(null);
+
+  const clearCheckTimer = useCallback(() => {
+    if (checkTimerRef.current) {
+      clearTimeout(checkTimerRef.current);
+      checkTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => clearCheckTimer(), [clearCheckTimer]);
 
   const loadQuiz = useCallback(async () => {
     setLoadStatus('loading');
@@ -117,6 +128,8 @@ const PracticeWindow = ({ onNavigateBack }) => {
     setFinished(false);
     setSubmittingScore(false);
     setScoreResult(null);
+    setStepFeedback(null);
+    clearCheckTimer();
     setMascotMood('thinking');
     setMascotMsg('Generating five polysemy questions…');
 
@@ -152,7 +165,7 @@ const PracticeWindow = ({ onNavigateBack }) => {
       setMascotMood('idle');
       setMascotMsg('Offline set — choose the best option for each prompt.');
     }
-  }, []);
+  }, [clearCheckTimer]);
 
   useEffect(() => {
     loadQuiz();
@@ -231,19 +244,89 @@ const PracticeWindow = ({ onNavigateBack }) => {
     }
   };
 
-  const handleNext = () => {
-    if (!currentQuestion || !selectedLabel) return;
-    const nextResponses = {
-      ...responses,
-      [currentQuestion.id]: selectedLabel,
+  const checkCurrentAnswer = async () => {
+    const sel = String(selectedLabel).trim().toUpperCase();
+    if (!usingFallback && quizId) {
+      const res = await fetch(apiUrl('/api/practice-quiz/check'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quizId,
+          questionId: currentQuestion.id,
+          answer: sel,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Check failed');
+      }
+      return { correct: Boolean(data.correct), correctLabel: data.correctLabel };
+    }
+    const full = FALLBACK_QUESTIONS_FULL.find((q) => q.id === currentQuestion.id);
+    if (!full) throw new Error('No answer key');
+    return {
+      correct: sel === full.correctLabel,
+      correctLabel: full.correctLabel,
     };
-    setResponses(nextResponses);
+  };
 
-    if (currentStep < 5) {
-      setCurrentStep((s) => s + 1);
-      setSelectedLabel(null);
-    } else {
-      finishQuiz(nextResponses);
+  const handleCheckAndContinue = async () => {
+    if (!currentQuestion || !selectedLabel || stepFeedback !== null) return;
+    clearCheckTimer();
+    try {
+      const { correct, correctLabel } = await checkCurrentAnswer();
+      setStepFeedback(
+        correct
+          ? { kind: 'correct', atStep: currentStep }
+          : { kind: 'wrong', correctLabel, atStep: currentStep },
+      );
+      setMascotMood(correct ? 'happy' : 'sad');
+      setMascotMsg(
+        correct
+          ? 'நல்லது! That’s correct! 🎉'
+          : `The correct option was ${correctLabel}.`,
+      );
+      if (correct) {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.72 },
+          colors: ['#4ADE80', '#FBBF24', '#8B4513'],
+        });
+      }
+      const nextResponses = {
+        ...responses,
+        [currentQuestion.id]: selectedLabel,
+      };
+      const delay = correct ? 1600 : 1700;
+      checkTimerRef.current = window.setTimeout(() => {
+        checkTimerRef.current = null;
+        setStepFeedback(null);
+        setResponses(nextResponses);
+        if (currentStep < 5) {
+          setCurrentStep((s) => s + 1);
+          setSelectedLabel(null);
+          setMascotMood('idle');
+          setMascotMsg('Pick the best answer for each question!');
+        } else {
+          finishQuiz(nextResponses);
+        }
+      }, delay);
+    } catch (err) {
+      console.warn('[PracticeWindow] Answer check failed:', err);
+      clearCheckTimer();
+      const nextResponses = {
+        ...responses,
+        [currentQuestion.id]: selectedLabel,
+      };
+      if (currentStep < 5) {
+        setCurrentStep((s) => s + 1);
+        setSelectedLabel(null);
+      } else {
+        finishQuiz(nextResponses);
+      }
+      setMascotMood('idle');
+      setMascotMsg('Could not verify that answer — continuing.');
     }
   };
 
@@ -257,21 +340,18 @@ const PracticeWindow = ({ onNavigateBack }) => {
         <p className="sidebar-label">PROGRESS</p>
         <div className="step-list">
           {steps.map((s) => (
-            <motion.div
+            <div
               key={s}
-              animate={s === currentStep && !finished ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 0.4 }}
               className={`step-circle ${s === currentStep && !finished ? 'active' : ''} ${s < currentStep || finished ? 'done' : ''}`}
             >
               {s < currentStep || finished ? '✓' : s}
-            </motion.div>
+            </div>
           ))}
         </div>
         <div className="vertical-bar-container">
-          <motion.div
+          <div
             className="bar-fill"
-            animate={{ height: finished ? '100%' : progressFill }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            style={{ height: finished ? '100%' : progressFill }}
           />
         </div>
       </aside>
@@ -302,12 +382,7 @@ const PracticeWindow = ({ onNavigateBack }) => {
           )}
 
           {loadStatus === 'ready' && finished && scoreResult && (
-            <motion.div
-              className="completion-card"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-            >
+            <div className="completion-card completion-card--enter">
               <h2 className="completion-title">Your score</h2>
               <p className="score-big">
                 {scoreResult.score} / {scoreResult.outOf}
@@ -342,7 +417,7 @@ const PracticeWindow = ({ onNavigateBack }) => {
               >
                 New practice round
               </button>
-            </motion.div>
+            </div>
           )}
 
           {loadStatus === 'ready' &&
@@ -369,7 +444,18 @@ const PracticeWindow = ({ onNavigateBack }) => {
                     <button
                       key={opt.label}
                       type="button"
-                      className={`option-btn ${selectedLabel === opt.label ? 'option-btn--selected' : ''}`}
+                      disabled={Boolean(stepFeedback)}
+                      className={`option-btn ${selectedLabel === opt.label ? 'option-btn--selected' : ''} ${
+                        stepFeedback?.kind === 'correct' &&
+                        selectedLabel === opt.label
+                          ? 'option-btn--confirmed-correct'
+                          : ''
+                      } ${
+                        stepFeedback?.kind === 'wrong' &&
+                        opt.label === stepFeedback.correctLabel
+                          ? 'option-btn--reveal-correct'
+                          : ''
+                      }`}
                       onClick={() => setSelectedLabel(opt.label)}
                     >
                       <span className="opt-label">{opt.label}</span>
@@ -378,14 +464,48 @@ const PracticeWindow = ({ onNavigateBack }) => {
                   ))}
                 </div>
 
+                {stepFeedback ? (
+                  <div
+                    key={`${stepFeedback.atStep}-${stepFeedback.kind}-${stepFeedback.correctLabel ?? 'ok'}`}
+                    className={`feedback-popup ${
+                      stepFeedback.kind === 'correct'
+                        ? 'feedback-popup--ok'
+                        : 'feedback-popup--miss'
+                    }`}
+                    role="status"
+                  >
+                    {stepFeedback.kind === 'correct' ? (
+                      <>
+                        <Zap size={22} className="feedback-popup-icon" aria-hidden />
+                        <div className="feedback-popup-text">
+                          <strong>Correct!</strong>
+                          <span>
+                            {currentStep < 5
+                              ? 'Well done — next question in a moment.'
+                              : 'Well done — scoring your round…'}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="feedback-popup-text">
+                        <strong>Not quite</strong>
+                        <span>
+                          The correct option was{' '}
+                          <strong>{stepFeedback.correctLabel}</strong>.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
                 <div className="question-actions">
                   <button
                     type="button"
                     className="btn-next"
-                    onClick={handleNext}
-                    disabled={!selectedLabel}
+                    onClick={handleCheckAndContinue}
+                    disabled={!selectedLabel || Boolean(stepFeedback)}
                   >
-                    {currentStep === 5 ? 'Finish & see score' : 'Next question'}
+                    {currentStep === 5 ? 'Check & see score' : 'Check answer'}
                     <ChevronRight size={20} />
                   </button>
                 </div>
@@ -416,11 +536,12 @@ const PracticeWindow = ({ onNavigateBack }) => {
         .sidebar-label { font-size: 0.65rem; font-weight: 800; color: #22C55E; letter-spacing: 1.5px; margin-bottom: 40px; }
         .step-list { display: flex; flex-direction: column; gap: 20px; margin-bottom: auto; }
         .step-circle { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; font-weight: 700; background: #FFF9F5; color: #5C3317; font-size: 0.85rem; transition: var(--transition); }
-        .step-circle.active { background: #22C55E; color: white; border-color: #22C55E; box-shadow: 0 0 12px rgba(34, 197, 94, 0.4); }
+        .step-circle.active { background: #22C55E; color: white; border-color: #22C55E; box-shadow: 0 0 12px rgba(34, 197, 94, 0.4); animation: step-pulse 1.2s ease-in-out infinite; }
         .step-circle.done { background: #DCFCE7; color: #166534; border-color: #86EFAC; }
+        @keyframes step-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 
         .vertical-bar-container { width: 4px; height: 80px; background: #E5E7EB; border-radius: 2px; position: relative; overflow: hidden; margin-top: 24px; }
-        .bar-fill { position: absolute; bottom: 0; left: 0; width: 100%; background: #22C55E; }
+        .bar-fill { position: absolute; bottom: 0; left: 0; width: 100%; background: #22C55E; transition: height 0.5s ease-out; }
         .practice-content { flex: 1; margin-left: 100px; padding: 40px 8% 48px; position: relative; }
         .quiz-source-badge { font-size: 0.78rem; font-weight: 700; color: #166534; margin: 0 auto 12px; max-width: 720px; width: 100%; }
         .questions-container { display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; width: 100%; gap: 16px; }
@@ -447,6 +568,19 @@ const PracticeWindow = ({ onNavigateBack }) => {
         .opt-label { flex-shrink: 0; width: 34px; height: 34px; background: #FFEEDD; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #5C3317; font-size: 0.8rem; margin-top: 2px; transition: 0.3s; }
         .option-btn--selected .opt-label { background: #8B4513; color: white; }
         .opt-text { font-size: 1.05rem; font-weight: 600; color: var(--primary-brown); line-height: 1.45; font-family: var(--font-tamil), var(--font-body), sans-serif; }
+        .option-btn--reveal-correct { border-color: #22C55E !important; background: #F0FDF4 !important; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.22) !important; }
+        .option-btn--reveal-correct .opt-label { background: #22C55E !important; color: white !important; }
+        .option-btn--confirmed-correct { border-color: #16A34A !important; background: #ECFDF5 !important; box-shadow: 0 6px 22px rgba(22, 163, 74, 0.28) !important; }
+        .option-btn--confirmed-correct .opt-label { background: #16A34A !important; color: white !important; }
+
+        .feedback-popup { display: flex; align-items: flex-start; gap: 14px; margin-top: 4px; padding: 18px 22px; border-radius: 20px; box-shadow: 0 14px 44px rgba(0,0,0,0.1); border: 2px solid transparent; animation: feedback-pop 0.22s ease-out; }
+        @keyframes feedback-pop { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .feedback-popup--ok { background: linear-gradient(135deg, #F0FDF4, #DCFCE7); border-color: #4ADE80; color: #166534; }
+        .feedback-popup--miss { background: linear-gradient(135deg, #FEF2F2, #FEE2E2); border-color: #F87171; color: #991B1B; }
+        .feedback-popup-text { display: flex; flex-direction: column; gap: 4px; text-align: left; font-size: 0.98rem; line-height: 1.45; font-weight: 600; }
+        .feedback-popup-text strong { font-size: 1.06rem; font-weight: 800; }
+        .feedback-popup-text span { font-weight: 600; opacity: 0.92; }
+        .feedback-popup-icon { flex-shrink: 0; color: #15803D; margin-top: 2px; }
 
         .question-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
         .btn-next { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 100px; border: none; background: linear-gradient(180deg, #8B4513 0%, #5C3317 100%); color: white; font-family: var(--font-main); font-weight: 700; font-size: 1rem; cursor: pointer; transition: var(--transition); }
@@ -454,6 +588,8 @@ const PracticeWindow = ({ onNavigateBack }) => {
         .btn-next:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
         .completion-card { background: #FFF9F5; border-radius: 32px; padding: 40px; text-align: center; border: 1px solid rgba(139, 69, 19, 0.08); }
+        .completion-card--enter { animation: completion-enter 0.35s ease-out; }
+        @keyframes completion-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .completion-title { font-size: 1.5rem; font-weight: 800; color: var(--primary-brown); margin-bottom: 8px; }
         .score-big { font-size: 2.75rem; font-weight: 800; color: #166534; margin: 12px 0 16px; font-family: var(--font-main); }
         .completion-text { font-size: 1rem; color: #5C3317; opacity: 0.85; line-height: 1.6; margin-bottom: 24px; max-width: 48ch; margin-left: auto; margin-right: auto; }
