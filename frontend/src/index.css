@@ -1,0 +1,94 @@
+:root {
+  /* Shared page back navigation (matches app reference header) */
+  --nav-back-bg: #fff9f2;
+  --nav-back-ink: #4b3d01;
+
+  /* Color Palette */
+  --primary-brown: #4A2C00;
+  --primary-brown-light: #5C3317;
+  --accent-green: #4ADE80;
+  --accent-green-dark: #22C55E;
+  --soft-cream: #FFFAF5;
+  --bg-gradient: linear-gradient(135deg, #FFF5F2 0%, #FFF9EB 50%, #F5FAFF 100%);
+  --card-bg: #FFFFFF;
+  --input-bg: #FAFAFA;
+  --text-muted: #8E8E8E;
+  
+  /* Typography */
+  --font-main: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-tamil: 'Noto Sans Tamil', sans-serif;
+  
+  /* Shadows */
+  --shadow-sm: 0px 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0px 10px 40px rgba(0, 0, 0, 0.08);
+  
+  /* Radius */
+  --radius-lg: 32px;
+  --radius-md: 16px;
+  --radius-sm: 8px;
+  
+  /* Transitions */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-gradient);
+  color: var(--primary-brown);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-main);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary-brown-light) 0%, var(--primary-brown) 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 40px;
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: var(--transition);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(74, 44, 0, 0.3);
+}
+
+/* Background Decorations */
+.bg-characters {
+  position: fixed;
+  bottom: -50px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  font-size: 10rem;
+  font-family: var(--font-tamil);
+  color: rgba(74, 44, 0, 0.03);
+  pointer-events: none;
+  z-index: -1;
+}
